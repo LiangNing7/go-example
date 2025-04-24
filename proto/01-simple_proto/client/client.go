@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	pb "github.com/LiangNing7/go-example/proto/01-simple_proto/proto"
 )
@@ -15,8 +16,11 @@ const Address string = ":8000"
 var grpcClient pb.SimpleClient
 
 func main() {
-	// 连接服务器
-	conn, err := grpc.Dial(Address, grpc.WithInsecure())
+	// 连接服务器.
+	conn, err := grpc.NewClient(
+		Address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
 		log.Fatalf("net.Connect err: %v", err)
 	}
