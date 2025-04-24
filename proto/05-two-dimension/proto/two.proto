@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+option go_package = ".;personpb";
+
+message Foo {
+    repeated google.protobuf.Value array = 1;
+}
