@@ -1,0 +1,30 @@
+syntax = "proto3"; // 协议为 proto3.
+
+package proto;
+
+option go_package = "./;proto";
+
+// 定义发送请求消息.
+message SimpleRequest{
+  // 定义发送的参数，采用驼峰命令方式，小写加下划线.
+  // 如：student_name.
+  // 声明方式：参数类型 参数名 标识号（不可重复）
+  // 标识符用于在编译后的二进制消息格式中对字段进行识别。
+  // 一旦 Protobuf 消息投入使用，字段的标识符就不应再修改。
+  // 数字标签的取值范围为 `[1, 536870911]`，
+  // 其中 19000 至 19999 为保留数字，不能使用。
+  string data = 1;
+}
+
+// 定义响应消息.
+message SimpleResponse{
+  // 定义接收的参数.
+  // 参数类型 参数名 标识号（不可重复）
+  int32 code = 1;
+  string value = 2;
+}
+
+// 定义我们的服务（可定义多个服务，每个服务课定义多个接口）.
+service Simple{
+  rpc Route (SimpleRequest) returns (SimpleResponse){};
+}
