@@ -1,0 +1,76 @@
+syntax = "proto3"; // 协议为 proto3.
+
+package proto;
+
+//提供用于定义 HTTP 映射的功能，比如通过 option(google.api.http)实现 gRPC 到 HTTP 的映射.
+import "google/api/annotations.proto";
+// 为生成 OpenAPI 文档提供相关注释（如标题、版本、作者、许可证等信息.）
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "./;proto";
+
+// OpenAPI 全局配置，提供详细配置信息，用于生成 OpenAPI 文档
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+    info: {
+        // API名称
+        title: "Hello Wrold!";
+         // API版本
+         version: "1.0";
+         // API 描述
+         description: "";
+         // 开发者的联系方式，包括项目名称、网址和电子邮件
+         contact: {
+             name: "凉柠代码簿";
+             url: "https://github.com/LiangNing7/go-example";
+             email: "1075090027@qq.com";
+         };
+         // 可信息和链接（这里使用 MIT License）
+         license: {
+             name: "MIT License";
+             url: "https://github.com/LiangNing7/miniblog/blob/main/LICENSE";
+         };
+     };
+     //  指定访问协议为 HTTPS
+     schemes: HTTPS;
+     // 定义了服务的请求和响应的数据格式为 application/json
+     consumes: "application/json";
+     produces: "application/json";
+};
+
+// 定义发送请求消息.
+message SimpleRequest{
+  // 定义发送的参数，采用驼峰命令方式，小写加下划线.
+  // 如：student_name.
+  // 声明方式：参数类型 参数名 标识号（不可重复）
+  // 标识符用于在编译后的二进制消息格式中对字段进行识别。
+  // 一旦 Protobuf 消息投入使用，字段的标识符就不应再修改。
+  // 数字标签的取值范围为 `[1, 536870911]`，
+  // 其中 19000 至 19999 为保留数字，不能使用。
+  string data = 1;
+}
+
+// 定义响应消息.
+message SimpleResponse{
+  // 定义接收的参数.
+  // 参数类型 参数名 标识号（不可重复）
+  int32 code = 1;
+  string value = 2;
+}
+
+// 定义我们的服务（可定义多个服务，每个服务课定义多个接口）.
+service Simple{
+  rpc Route (SimpleRequest) returns (SimpleResponse){
+    option (google.api.http) = {
+      get: "/hello",
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      // 在 OpenAPI 文档中的接口简要描述，为 `服务健康检查`.
+      summary: "服务健康检查";
+      // 标识该操作的唯一ID，为 "hello".
+      operation_id: "hello";
+      // 将该接口归类为 “服务治理”.
+      tags: "服务治理";
+    };
+  };
+}

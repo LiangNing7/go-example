@@ -1,0 +1,108 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Hello Wrold!",
+    "version": "1.0",
+    "contact": {
+      "name": "凉柠代码簿",
+      "url": "https://github.com/LiangNing7/go-example",
+      "email": "1075090027@qq.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://github.com/LiangNing7/miniblog/blob/main/LICENSE"
+    }
+  },
+  "tags": [
+    {
+      "name": "Simple"
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/hello": {
+      "get": {
+        "summary": "服务健康检查",
+        "operationId": "hello",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoSimpleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "data",
+            "description": "定义发送的参数，采用驼峰命令方式，小写加下划线.\n如：student_name.\n声明方式：参数类型 参数名 标识号（不可重复）\n标识符用于在编译后的二进制消息格式中对字段进行识别。\n一旦 Protobuf 消息投入使用，字段的标识符就不应再修改。\n数字标签的取值范围为 `[1, 536870911]`，\n其中 19000 至 19999 为保留数字，不能使用。",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "服务治理"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protoSimpleResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "title": "定义接收的参数.\n参数类型 参数名 标识号（不可重复）"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "description": "定义响应消息."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}
