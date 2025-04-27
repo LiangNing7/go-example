@@ -2527,59 +2527,235 @@ $ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v
 $ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.24.0
 ```
 
-由于之前已经实现了一个简单的 gRPC 服务，现在只需要在 MiniBlog 服务定义文件中添加 gRPC-Gateway 注解即可，注解定义了 gRPC 服务如何映射到 RESTful JSON API，包括指定 HTTP 请求方法、请求路径、请求参数等信息。MiniBlog gRPC 服务 UpdatePost 接口的注解如下所示：
+为了降低读者学习的难度，该项目将依赖的 Protobuf 文件统一保存在 [`10-grpc-gateway/proto/`](https://github.com/LiangNing7/go-example/tree/main/proto/10-grpc-gateway/proto) 目录下，主要有：`google/`、`github.com/`、`protoc-gen-openapiv2/`
 
-```go
-// 定义了一个 MiniBlog RPC 服务
-service MiniBlog {
-    // UpdatePost 更新文章
-    rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse) {
-        // 将 UpdatePost 映射为 HTTP PUT 请求，并通过 URL /v1/posts/{postID} 访问
-        // {postID} 是一个路径参数，grpc-gateway 会根据 postID 名称，将其解析并映射到
-        // UpdatePostRequest 类型中相应的字段.
-        // body: "*" 表示请求体中的所有字段都会映射到 UpdatePostRequest 类型。
-        option (google.api.http) = {
-            put: "/v1/posts/{postID}",
-            body: "*",
-        };
+### 新建 proto 文件
 
-        // 提供用于生成 OpenAPI 文档的注解
-        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-            // 在文档中简要描述此操作的功能：更新文章。
-            summary: "更新文章";
-            // 为此操作指定唯一标识符（UpdatePost），便于跟踪
-            operation_id: "UpdatePost";
-            // 将此操作归类到 "博客管理" 标签组，方便在 OpenAPI 文档中组织接口分组
-            tags: "博客管理";
-        };
-    }
+代码位于：[gateway.proto](https://github.com/LiangNing7/go-example/blob/main/proto/10-grpc-gateway/proto/gateway.proto)
+
+```protobuf
+syntax = "proto3"; // 协议为 proto3.
+
+package proto;
+
+//提供用于定义 HTTP 映射的功能，比如通过 option(google.api.http)实现 gRPC 到 HTTP 的映射.
+import "google/api/annotations.proto";
+// 为生成 OpenAPI 文档提供相关注释（如标题、版本、作者、许可证等信息.）
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "./;proto";
+
+// OpenAPI 全局配置，提供详细配置信息，用于生成 OpenAPI 文档
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+    info: {
+        // API名称
+        title: "Hello Wrold!";
+         // API版本
+         version: "1.0";
+         // API 描述
+         description: "";
+         // 开发者的联系方式，包括项目名称、网址和电子邮件
+         contact: {
+             name: "凉柠代码簿";
+             url: "https://github.com/LiangNing7/go-example";
+             email: "1075090027@qq.com";
+         };
+         // 可信息和链接（这里使用 MIT License）
+         license: {
+             name: "MIT License";
+             url: "https://github.com/LiangNing7/miniblog/blob/main/LICENSE";
+         };
+     };
+     //  指定访问协议为 HTTPS
+     schemes: HTTPS;
+     // 定义了服务的请求和响应的数据格式为 application/json
+     consumes: "application/json";
+     produces: "application/json";
+};
+
+// 定义发送请求消息.
+message SimpleRequest{
+  // 定义发送的参数，采用驼峰命令方式，小写加下划线.
+  // 如：student_name.
+  // 声明方式：参数类型 参数名 标识号（不可重复）
+  // 标识符用于在编译后的二进制消息格式中对字段进行识别。
+  // 一旦 Protobuf 消息投入使用，字段的标识符就不应再修改。
+  // 数字标签的取值范围为 `[1, 536870911]`，
+  // 其中 19000 至 19999 为保留数字，不能使用。
+  string data = 1;
 }
 
-// UpdatePostRequest 表示更新文章请求
-message UpdatePostRequest {
-    // postID 表示要更新的文章 ID，对应 {postID}
-    string postID = 1;
-    // title 表示更新后的博客标题
-    optional string title = 2;
-    // content 表示更新后的博客内容
-    optional string content = 3;
+// 定义响应消息.
+message SimpleResponse{
+  // 定义接收的参数.
+  // 参数类型 参数名 标识号（不可重复）
+  int32 code = 1;
+  string value = 2;
 }
 
-// UpdatePostResponse 表示更新文章响应
-message UpdatePostResponse {
+// 定义我们的服务（可定义多个服务，每个服务课定义多个接口）.
+service Simple{
+  rpc Route (SimpleRequest) returns (SimpleResponse){
+    option (google.api.http) = {
+      get: "/hello",
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      // 在 OpenAPI 文档中的接口简要描述，为 `服务健康检查`.
+      summary: "服务健康检查";
+      // 标识该操作的唯一ID，为 "hello".
+      operation_id: "hello";
+      // 将该接口归类为 “服务治理”.
+      tags: "服务治理";
+    };
+  };
 }
 ```
 
-在 `UpdatePost` 接口定义中，使用 `google.api.http` 注解，将 `UpdatePost` 映射为 `HTTP PUT` 请求，并通过 `URL /v1/posts/{postID}` 访问。`{postID}` 是一个路径参数，`grpc-gateway` 会根据 `postID` 名称，将其解析并映射到 `UpdatePostRequest` 类型中的 `postID` 字段。`body: "*"` 表示请求体中的所有字段都会映射到 `UpdatePostRequest` 类型中的同名字段中。
+然后生成普通 Protobuf + gRPC：
 
-在通过 `google.api.http` 注解将 gRPC 方法映射为 HTTP 请求时，有以下规则需要遵守：
+```bash
+$ protoc --go_out=. --go-grpc_out=. ./gateway.proto
+```
 
-1. HTTP 路径可以包含一个或多个 gRPC 请求消息中的字段，但这些字段应该是 nonrepeated 的原始类型字段；
-2. 如果没有 HTTP 请求体，那么出现在请求消息中但没有出现在 HTTP 路径中的字段，将自动成为 HTTP 查询参数；
-3. 映射为 URL 查询参数的字段应该是原始类型、repeated 原始类型或 nonrepeated 消息类型；
-4. 对于查询参数的 repeated 字段，参数可以在 URL 中重复，形式为 `…?param=A&m=B`；
-5. 对于查询参数中的消息类型，消息的每个字段都会映射为单独的参数，比如 `…?foo.a=A&foo.b=B&foo.c=C`。
+生成 grpc-gateway 反向代理：
 
-此外，还可以根据需要添加全局的 OpenAPI 配置，用于在生成 OpenAPI 文档时，提供更详细的配置信息。
+```bash
+$ protoc --grpc-gateway_out=. ./gateway.proto
+```
+
+生成 OpenAPI (Swagger) JSON：
+
+```bash
+$ protoc --openapiv2_out=./api/openapi ./gateway.proto
+```
+
+现在 `proto/` 目录下的文件如下：
+
+```bash
+$ tree -L 1
+.
+├── api/
+├── gateway_grpc.pb.go
+├── gateway.pb.go
+├── gateway.pb.gw.go
+├── gateway.proto
+├── github.com/
+├── google/
+└── protoc-gen-openapiv2/
+```
+
+在 [api/](https://github.com/LiangNing7/go-example/blob/main/proto/10-grpc-gateway/proto/api/openapi/gateway.swagger.json) 目录下，有通过 .proto 文件生成的 swagger 文档 
+
+### 新建 server 端
+
+定义 gRPC 服务端：[server.go](https://github.com/LiangNing7/go-example/blob/main/proto/10-grpc-gateway/server/server.go)
+
+```go
+package server
+
+import (
+	"context"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+
+	pb "github.com/LiangNing7/go-example/proto/10-grpc-gateway/proto"
+)
+
+// SimpleService 定义我们的服务
+type SimpleService struct {
+	pb.UnimplementedSimpleServer
+}
+
+func RunGRPCServer(addr string) error {
+	// 监听本地端口
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("net.Listen err: %v", err)
+	}
+	log.Println(addr + " net.Listing...")
+	// 新建gRPC服务器实例
+	grpcServer := grpc.NewServer()
+	// 在gRPC服务器注册我们的服务
+	pb.RegisterSimpleServer(grpcServer, &SimpleService{})
+
+	// 用服务器 Serve() 方法以及我们的端口信息区实现阻塞等待，直到进程被杀死或者 Stop() 被调用
+	err = grpcServer.Serve(listener)
+	return err
+}
+
+// Route 实现Route方法
+func (s *SimpleService) Route(ctx context.Context, req *pb.SimpleRequest) (*pb.SimpleResponse, error) {
+	res := pb.SimpleResponse{
+		Code:  200,
+		Value: "hello " + req.Data,
+	}
+	return &res, nil
+}
+```
+
+### 编写 HTTP -> gRPC 转发器
+
+然后实现 HTTP `->` gRPC 转发器 [main.go](https://github.com/LiangNing7/go-example/blob/main/proto/10-grpc-gateway/cmd/gateway/main.go)
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+
+	pb "github.com/LiangNing7/go-example/proto/10-grpc-gateway/proto"
+	"github.com/LiangNing7/go-example/proto/10-grpc-gateway/server"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	// gRPC 服务地址.
+	grpcAddr := ":9090"
+	// HTTP Gateway 地址.
+	httpAddr := ":8080"
+
+	// 启动 gRPC 服务（在单独的 goroutine 中启动）.
+	go func() {
+		if err := server.RunGRPCServer(grpcAddr); err != nil {
+			log.Fatalf("grpcServer.Serve err: %v", err)
+		}
+	}()
+
+	// 创建 gRPC-Gateway 的 multiplexer.
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
+	// 注册 HTTP 转发.
+	err := pb.RegisterSimpleHandlerFromEndpoint(context.Background(), mux, grpcAddr, opts)
+	if err != nil {
+		log.Fatalf("failed to register gateway: %v", err)
+	}
+	log.Printf("HTTP gateway listening at %s", httpAddr)
+	if err := http.ListenAndServe(httpAddr, mux); err != nil {
+		log.Fatalf("failed to serve HTTP gateway: %v", err)
+	}
+}
+```
+
+### 测试
+
+```bash
+$ go mod tidy
+$ go run cmd/gateway/main.go
+```
+
+使用 `curl` 测试 HTTP 接口：
+
+```bash
+curl http://127.0.0.1:8080/hello
+{"code":200,"value":"hello "}
+```
 
 至此，大致完成了 gRPC 的学习！！！
